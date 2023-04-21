@@ -1,3 +1,6 @@
+# Add the online adjust weight function
+<img src=https://github.com/SunHaoOne/piecewise_jerk_optimize/blob/main/piecewise_jerk_path.gif/><br/>
+
 # piecewise_jerk_optimize
 Piecewise jerk speed optimize  
 <img src=https://github.com/xilinnancheng/piecewise_jerk_optimize/blob/main/piecewise_jerk_speed.png width = "600" height="400"/><br/>  
@@ -11,6 +14,5 @@ Piecewise jerk path optimize
 2. https://www.cnblogs.com/icathianrain/p/14407626.html
 
 
-# Add the online adjust weight function
-<img src=https://github.com/SunHaoOne/piecewise_jerk_optimize/blob/main/piecewise_jerk_path.gif/><br/>
+
 
