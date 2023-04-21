@@ -4,6 +4,7 @@ import osqp
 from scipy import sparse
 from matplotlib import pyplot as plt
 
+
 class PieceJerkOptimize:
     def __init__(self, num_of_point):
         self.num_of_point = num_of_point
@@ -32,9 +33,14 @@ class PieceJerkOptimize:
         self.solution_dx = []
         self.solution_ddx = []
         self.solution_dddx = []
+
+        self.solution_status = None
+        self.solution_polish = None
+        self.solution_nums_of_iteration = None
+
         pass
 
-    def SetWeight(self, w_x, w_dx,w_ddx, w_dddx, w_ref_x):
+    def SetWeight(self, w_x, w_dx, w_ddx, w_dddx, w_ref_x):
         self.w_x = w_x
         self.w_dx = w_dx
         self.w_ddx = w_ddx
@@ -84,7 +90,7 @@ class PieceJerkOptimize:
 
         for i in range(2 * self.num_of_point):
             P.append(0.0)
-        
+
         P = numpy.array(P)
         return P
 
@@ -98,7 +104,7 @@ class PieceJerkOptimize:
             row.append(i)
             col.append(i)
             data.append(1.0)
-        
+
         # dx constraint.
         for i in range(self.num_of_point):
             row.append(self.num_of_point + i)
@@ -110,7 +116,7 @@ class PieceJerkOptimize:
             row.append(2 * self.num_of_point + i)
             col.append(2 * self.num_of_point + i)
             data.append(1)
-        
+
         # dddx constraint.
         for i in range(self.num_of_point - 1):
             row.append(3 * self.num_of_point + i)
@@ -177,11 +183,11 @@ class PieceJerkOptimize:
 
             row.append(5 * self.num_of_point + 2 + i)
             col.append(2 * self.num_of_point + i)
-            data.append(1.0/3.0 * self.step_square[i])
+            data.append(1.0 / 3.0 * self.step_square[i])
 
             row.append(5 * self.num_of_point + 2 + i)
             col.append(2 * self.num_of_point + i + 1)
-            data.append(1.0/6.0 * self.step_square[i])
+            data.append(1.0 / 6.0 * self.step_square[i])
 
         A = sparse.csc_matrix((data, (row, col)), shape=(
             6 * self.num_of_point + 1, self.num_of_variable))
@@ -193,17 +199,17 @@ class PieceJerkOptimize:
         for i in range(self.num_of_point):
             lb.append(self.x_lower_bound[i])
             ub.append(self.x_upper_bound[i])
-        
+
         # dx bound
         for i in range(self.num_of_point):
             lb.append(self.dx_lower_bound[i])
             ub.append(self.dx_upper_bound[i])
-        
+
         # ddx bound
         for i in range(self.num_of_point):
             lb.append(self.ddx_lower_bound[i])
             ub.append(self.ddx_upper_bound[i])
-        
+
         # dddx bound
         for i in range(self.num_of_point - 1):
             lb.append(self.dddx_lower_bound[i] * self.step[i])
@@ -227,14 +233,14 @@ class PieceJerkOptimize:
         for i in range(self.num_of_point - 1):
             lb.append(-10e-5)
             ub.append(10e-5)
-        
+
         ## x consistency
         for i in range(self.num_of_point - 1):
             lb.append(-10e-5)
             ub.append(10e-5)
 
         numpy.set_printoptions(linewidth=numpy.inf)
-        return A,lb,ub    
+        return A, lb, ub
 
     def Optimize(self):
         Q = self.CalculateQ()
@@ -247,15 +253,21 @@ class PieceJerkOptimize:
                    eps_prim_inf=1e-5, eps_dual_inf=1e-5, verbose=True)
 
         var_warm_start = numpy.array(self.ref_x + [0.0 for n in range(2 * self.num_of_point)])
-        prob.warm_start(x = var_warm_start)
+        prob.warm_start(x=var_warm_start)
         res = prob.solve()
 
+        self.solution_status = res.info.status
+        self.solution_nums_of_iteration = res.info.iter
+        self.texts = []
+        # print("status:               {}".format(self.solution_status))
+        # print("number of iterations: {}".format(self.solution_nums_of_iteration))
+
         self.solution_x = res.x[0:self.num_of_point]
-        self.solution_dx = res.x[self.num_of_point:2 *self.num_of_point]
-        self.solution_ddx = res.x[2 *self.num_of_point:3 * self.num_of_point]
-        
+        self.solution_dx = res.x[self.num_of_point:2 * self.num_of_point]
+        self.solution_ddx = res.x[2 * self.num_of_point:3 * self.num_of_point]
+
         for i in range(self.num_of_point - 1):
-            self.solution_dddx.append((self.solution_ddx[i+1] - self.solution_ddx[i])/self.step[i])
+            self.solution_dddx.append((self.solution_ddx[i + 1] - self.solution_ddx[i]) / self.step[i])
         self.solution_dddx.append(0.0)
 
     def VizResult(self):
